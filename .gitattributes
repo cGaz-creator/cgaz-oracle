@@ -1,2 +1,2 @@
-# enforce LF for Solidity
+# enforce LF for all Solidity files
 *.sol text eol=lf
