@@ -27,7 +27,7 @@ jobs:
             ${{ runner.os }}-foundry-
 
       - name: Install dependencies
-        run: forge install --no-progress
+        run: forge install
 
       - name: Check code formatting
         run: forge fmt --check
