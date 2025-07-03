@@ -1,0 +1,39 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Setup Foundry
+        uses: foundry-rs/setup-foundry@v1
+        with:
+          version: latest
+
+      - name: Cache Foundry cache
+        uses: actions/cache@v3
+        with:
+          path: ~/.foundry
+          key: ${{ runner.os }}-foundry-${{ hashFiles('**/foundry.toml') }}
+          restore-keys: |
+            ${{ runner.os }}-foundry-
+
+      - name: Install dependencies
+        run: forge install --no-progress
+
+      - name: Check code formatting
+        run: forge fmt --check
+
+      - name: Build with size metrics
+        run: forge build --sizes
+
+      - name: Run tests
+        run: forge test -vvv
