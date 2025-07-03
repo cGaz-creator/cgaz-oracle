@@ -2,7 +2,7 @@
 pragma solidity ^0.8.17;
 
 import "forge-std/Test.sol";
-import {CgazToken} from "../src/CgazToken.sol";
+import {CgazToken} from "src/CgazToken.sol";
 
 contract CgazTokenTest is Test {
     CgazToken token;
