@@ -1,38 +1,45 @@
- jobs:
-   build:
-     runs-on: ubuntu-latest
-     steps:
-       - name: Checkout repository
-         uses: actions/checkout@v3
-         with:
-           submodules: recursive
+# .github/workflows/ci.yml
+name: CI
 
-       - name: Install Foundry
-         run: |
-           curl -L https://foundry.paradigm.xyz | bash
--          echo "$HOME/.foundry/bin" >> $GITHUB_PATH
-+          echo "$HOME/.foundry/bin" >> $GITHUB_PATH
+# Déclencheurs : on push et pull_request sur la branche main
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
 
-       - name: Cache Foundry cache
-         uses: actions/cache@v3
-         with:
-           path: ~/.foundry
-           key: ${{ runner.os }}-foundry-${{ hashFiles('**/foundry.toml') }}
-           restore-keys: |
-             ${{ runner.os }}-foundry-
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+        with:
+          submodules: recursive
 
-       - name: Install dependencies
--        run: forge install --no-progress
-+        run: $HOME/.foundry/bin/forge install --no-progress
+      - name: Installer Foundry
+        run: |
+          curl -L https://foundry.paradigm.xyz | bash
+          echo "$HOME/.foundry/bin" >> $GITHUB_PATH
 
-       - name: Check code formatting
--        run: forge fmt --check
-+        run: $HOME/.foundry/bin/forge fmt --check
+      - name: Mettre en cache le cache Foundry
+        uses: actions/cache@v3
+        with:
+          path: ~/.foundry
+          key: ${{ runner.os }}-foundry-${{ hashFiles('**/foundry.toml') }}
+          restore-keys: |
+            ${{ runner.os }}-foundry-
 
-       - name: Build with size metrics
--        run: forge build --sizes
-+        run: $HOME/.foundry/bin/forge build --sizes
+      - name: Installer les dépendances
+        run: $HOME/.foundry/bin/forge install --no-progress
 
-       - name: Run tests
--        run: forge test -vvv
-+        run: $HOME/.foundry/bin/forge test -vvv
+      - name: Vérifier le format du code
+        run: $HOME/.foundry/bin/forge fmt --check
+
+      - name: Compiler avec rapports de taille
+        run: $HOME/.foundry/bin/forge build --sizes
+
+      - name: Exécuter les tests
+        run: $HOME/.foundry/bin/forge test -vvv
