@@ -1,41 +1,38 @@
-name: CI
+ jobs:
+   build:
+     runs-on: ubuntu-latest
+     steps:
+       - name: Checkout repository
+         uses: actions/checkout@v3
+         with:
+           submodules: recursive
 
-on:
-  push:
-    branches: [main]
-  pull_request:
-    branches: [main]
+       - name: Install Foundry
+         run: |
+           curl -L https://foundry.paradigm.xyz | bash
+-          echo "$HOME/.foundry/bin" >> $GITHUB_PATH
++          echo "$HOME/.foundry/bin" >> $GITHUB_PATH
 
-jobs:
-  build:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v3
-        with:
-          submodules: recursive
+       - name: Cache Foundry cache
+         uses: actions/cache@v3
+         with:
+           path: ~/.foundry
+           key: ${{ runner.os }}-foundry-${{ hashFiles('**/foundry.toml') }}
+           restore-keys: |
+             ${{ runner.os }}-foundry-
 
-      - name: Install Foundry
-        run: |
-          curl -L https://foundry.paradigm.xyz | bash
-          echo "$HOME/.foundry/bin" >> $GITHUB_PATH
+       - name: Install dependencies
+-        run: forge install --no-progress
++        run: $HOME/.foundry/bin/forge install --no-progress
 
-      - name: Cache Foundry cache
-        uses: actions/cache@v3
-        with:
-          path: ~/.foundry
-          key: ${{ runner.os }}-foundry-${{ hashFiles('**/foundry.toml') }}
-          restore-keys: |
-            ${{ runner.os }}-foundry-
+       - name: Check code formatting
+-        run: forge fmt --check
++        run: $HOME/.foundry/bin/forge fmt --check
 
-      - name: Install dependencies
-        run: forge install --no-progress
+       - name: Build with size metrics
+-        run: forge build --sizes
++        run: $HOME/.foundry/bin/forge build --sizes
 
-      - name: Check code formatting
-        run: forge fmt --check
-
-      - name: Build with size metrics
-        run: forge build --sizes
-
-      - name: Run tests
-        run: forge test -vvv
+       - name: Run tests
+-        run: forge test -vvv
++        run: $HOME/.foundry/bin/forge test -vvv
