@@ -16,7 +16,7 @@ jobs:
           submodules: recursive
 
       - name: Setup Foundry
-        uses: foundry-rs/setup-foundry@v0.2.0
+        uses: foundry-rs/setup-foundry@v2
 
       - name: Cache Foundry cache
         uses: actions/cache@v3
