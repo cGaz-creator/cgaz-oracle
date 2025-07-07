@@ -17,7 +17,7 @@ contract CgazToken is ERC20, Ownable {
     int256 public currentPrice;
     uint256 public lastUpdated;
 
-/// @notice Instance du token USDC (mainnet)
+    /// @notice Instance du token USDC (mainnet)
     IERC20 public usdc = IERC20(0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48);
 
     event PriceUpdated(int256 price, uint256 timestamp);
@@ -66,7 +66,8 @@ contract CgazToken is ERC20, Ownable {
         _transfer(from, owner(), fee);
         emit TokensBurned(from, burned, fee);
     }
- /// @notice Permet au propriétaire de récupérer des USDC bloqués par erreur
+    /// @notice Permet au propriétaire de récupérer des USDC bloqués par erreur
+
     function recoverUSDC(address to, uint256 amount) external onlyOwner {
         usdc.transfer(to, amount);
     }
