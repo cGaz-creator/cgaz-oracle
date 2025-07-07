@@ -2,6 +2,7 @@
 pragma solidity ^0.8.17;
 
 import "openzeppelin-contracts/contracts/token/ERC20/ERC20.sol";
+import "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
 import "openzeppelin-contracts/contracts/access/Ownable.sol";
 import {AggregatorV3Interface} from "src/interfaces/AggregatorV3Interface.sol";
 
@@ -15,6 +16,9 @@ contract CgazToken is ERC20, Ownable {
     address public oracle;
     int256 public currentPrice;
     uint256 public lastUpdated;
+
+/// @notice Instance du token USDC (mainnet)
+    IERC20 public usdc = IERC20(0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48);
 
     event PriceUpdated(int256 price, uint256 timestamp);
     event TokensMinted(address indexed to, uint256 netAmount, uint256 fee);
@@ -61,5 +65,9 @@ contract CgazToken is ERC20, Ownable {
         _burn(from, burned);
         _transfer(from, owner(), fee);
         emit TokensBurned(from, burned, fee);
+    }
+ /// @notice Permet au propriétaire de récupérer des USDC bloqués par erreur
+    function recoverUSDC(address to, uint256 amount) external onlyOwner {
+        usdc.transfer(to, amount);
     }
 }
