@@ -25,15 +25,11 @@ contract MockGasFeed is AggregatorV3Interface {
         return 1;
     }
 
-    function getRoundData(uint80) external pure override returns (
-        uint80, int256, uint256, uint256, uint80
-    ) {
+    function getRoundData(uint80) external pure override returns (uint80, int256, uint256, uint256, uint80) {
         revert("not used");
     }
 
-    function latestRoundData() external view override returns (
-        uint80, int256, uint256, uint256, uint80
-    ) {
+    function latestRoundData() external view override returns (uint80, int256, uint256, uint256, uint80) {
         return (0, mockPrice, 0, 0, 0);
     }
 }
