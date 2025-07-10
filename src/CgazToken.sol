@@ -18,20 +18,21 @@ contract CgazToken is ERC20, Ownable {
     uint256 public lastUpdated;
 
     /// @notice Instance du token USDC (mainnet)
-    IERC20 public usdc = IERC20(0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48);
+    IERC20 public usdc;
 
     event PriceUpdated(int256 price, uint256 timestamp);
     event TokensMinted(address indexed to, uint256 netAmount, uint256 fee);
     event TokensBurned(address indexed from, uint256 burnedAmount, uint256 fee);
 
-    constructor(string memory name_, string memory symbol_, address _oracle)
+    constructor(string memory name_, string memory symbol_, address _oracle, IERC20 _usdc)
         ERC20(name_, symbol_)
         Ownable(msg.sender)
     {
         oracle = _oracle;
+        usdc = _usdc;
     }
-
     /// @notice Publie un nouveau prix on-chain (seul `oracle` peut appeler)
+
     function updatePrice(int256 _price) external {
         require(msg.sender == oracle, "Only oracle");
         require(_price > 0, "Invalid price");

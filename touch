@@ -1,0 +1,30 @@
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.17;
+
+import "forge-std/Test.sol";
+import {CgazToken} from "src/CgazToken.sol";
+import {IERC20} from "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
+
+contract CgazTokenRecoverTest is Test {
+    CgazToken token;
+    address owner = address(1);
+    IERC20 usdc = IERC20(0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48);
+
+    function setUp() public {
+        vm.prank(owner);
+        token = new CgazToken("cGAZ", "CGAZ", owner);
+    }
+
+    function testRecoverUSDC() public {
+        // 1) Simule un dépôt de USDC sur le contrat
+        uint256 amount = 1e6; // 1 USDC (6 décimales)
+        // on doit d'abord donner une balance au contrat via un mock ou fork mainnet
+
+        // 2) Appel recoverUSDC
+        vm.prank(owner);
+        token.recoverUSDC(address(this), amount);
+
+        // 3) Vérifie que this a bien reçu ses USDC
+        assertEq(usdc.balanceOf(address(this)), amount);
+    }
+}

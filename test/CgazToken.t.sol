@@ -4,6 +4,15 @@ pragma solidity ^0.8.17;
 import "forge-std/Test.sol";
 import {CgazToken} from "src/CgazToken.sol";
 import {AggregatorV3Interface} from "src/interfaces/AggregatorV3Interface.sol";
+import "openzeppelin-contracts/contracts/token/ERC20/ERC20.sol";
+
+/// @dev Mock simple d’un ERC20 pour les tests
+contract MockERC20 is ERC20 {
+    constructor() ERC20("Mock USDC", "mUSDC") {
+        // Optionnel : minter des tokens si tu veux tester recoverUSDC
+        _mint(address(this), type(uint256).max);
+    }
+}
 
 /// @dev Mock Chainlink feed for tests
 contract MockGasFeed is AggregatorV3Interface {
@@ -39,13 +48,16 @@ contract CgazTokenTest is Test {
     address public owner = address(1);
 
     function setUp() public {
-        // 1) Deploy mock oracle at price = 1 gwei
+        // 1) Mock oracle + mock USDC
         vm.prank(owner);
         MockGasFeed feed = new MockGasFeed(1e9);
-        // 2) Instantiate token with that oracle
+        MockERC20 mockUSDC = new MockERC20();
+
+        // 2) Deploy token avec _oracle + mockUSDC
         vm.prank(owner);
-        token = new CgazToken("cGAZ", "CGAZ", address(feed));
-        // 3) Publish a first price so mint/burn can proceed
+        token = new CgazToken("cGAZ", "CGAZ", address(feed), mockUSDC);
+
+        // 3) initial price on-chain
         vm.prank(address(feed));
         token.updatePrice(1e9);
     }
