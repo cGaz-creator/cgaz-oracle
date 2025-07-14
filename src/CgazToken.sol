@@ -5,9 +5,12 @@ import "openzeppelin-contracts/contracts/token/ERC20/ERC20.sol";
 import "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
 import "openzeppelin-contracts/contracts/access/Ownable.sol";
 import {AggregatorV3Interface} from "src/interfaces/AggregatorV3Interface.sol";
+import "openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol";
 
 /// @title cGAZ with on-chain price updates and 0.5% fees
 contract CgazToken is ERC20, Ownable {
+    using SafeERC20 for IERC20;
+
     uint256 public constant FEE_BASIS_POINTS = 50; // 0.5%
     uint256 public constant BASIS_POINTS_DIVISOR = 10000;
     uint256 public constant UPDATE_INTERVAL = 3600; // 1h on-chain
@@ -50,23 +53,31 @@ contract CgazToken is ERC20, Ownable {
         return currentPrice;
     }
 
-    function mint(address to, uint256 amount) external onlyOwner {
+    function mint(address to, uint256 usdcAmount) external onlyOwner {
         _getPrice();
-        uint256 fee = (amount * FEE_BASIS_POINTS) / BASIS_POINTS_DIVISOR;
-        uint256 net = amount - fee;
-        _mint(to, net);
+        usdc.safeTransferFrom(msg.sender, address(this), usdcAmount);
+        uint256 grossCGAZ = (usdcAmount * 10 ** decimals()) / uint256(currentPrice);
+        uint256 fee = (grossCGAZ * FEE_BASIS_POINTS) / BASIS_POINTS_DIVISOR;
+        uint256 netCGAZ = grossCGAZ - fee;
+        _mint(to, netCGAZ);
         _mint(owner(), fee);
-        emit TokensMinted(to, net, fee);
+        emit TokensMinted(to, netCGAZ, fee);
     }
 
-    function burn(address from, uint256 amount) external onlyOwner {
+    function burn(address from, uint256 cgazAmount) external onlyOwner {
         _getPrice();
-        uint256 fee = (amount * FEE_BASIS_POINTS) / BASIS_POINTS_DIVISOR;
-        uint256 burned = amount - fee;
+        // calcul de la fee & du net à brûler
+        uint256 fee = (cgazAmount * FEE_BASIS_POINTS) / BASIS_POINTS_DIVISOR;
+        uint256 burned = cgazAmount - fee;
+
+        // on ne retire que le net du user
         _burn(from, burned);
-        _transfer(from, owner(), fee);
+        // on mint la fee pour l’owner
+        _mint(owner(), fee);
+
         emit TokensBurned(from, burned, fee);
     }
+
     /// @notice Permet au propriétaire de récupérer des USDC bloqués par erreur
 
     function recoverUSDC(address to, uint256 amount) external onlyOwner {
