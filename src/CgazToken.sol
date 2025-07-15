@@ -66,16 +66,28 @@ contract CgazToken is ERC20, Ownable {
 
     function burn(address from, uint256 cgazAmount) external onlyOwner {
         _getPrice();
-        // calcul de la fee & du net à brûler
-        uint256 fee = (cgazAmount * FEE_BASIS_POINTS) / BASIS_POINTS_DIVISOR;
-        uint256 burned = cgazAmount - fee;
+        // 1) Calcul de la fee (en cGAZ) et de la quantité nette brûlée
+        uint256 feeCGAZ = (cgazAmount * FEE_BASIS_POINTS) / BASIS_POINTS_DIVISOR;
+        uint256 netCGAZ = cgazAmount - feeCGAZ;
 
-        // on ne retire que le net du user
-        _burn(from, burned);
-        // on mint la fee pour l’owner
-        _mint(owner(), fee);
+        // 2) Brûler le cGAZ net de l’utilisateur et mint la fee en cGAZ pour l’owner
+        _burn(from, netCGAZ);
+        _mint(owner(), feeCGAZ);
 
-        emit TokensBurned(from, burned, fee);
+        // 3) Conversion cGAZ → USDC (en tenant compte des décimales)
+        //    grossUSDC = burnt_cGAZ * price / 10**decimals()
+        uint256 grossUSDC = (netCGAZ * uint256(currentPrice)) / (10 ** decimals());
+
+        // 4) Calcul des frais sur les USDC (0,5 %)
+        uint256 feeUSDC = (grossUSDC * FEE_BASIS_POINTS) / BASIS_POINTS_DIVISOR;
+        uint256 netUSDC = grossUSDC - feeUSDC;
+
+        // 5) Transfert des USDC
+        usdc.safeTransfer(from, netUSDC);
+        usdc.safeTransfer(owner(), feeUSDC);
+
+        emit TokensBurned(from, netCGAZ, feeCGAZ);
+        emit PriceUpdated(currentPrice, lastUpdated); // (optionnel pour retracer)
     }
 
     /// @notice Permet au propriétaire de récupérer des USDC bloqués par erreur
