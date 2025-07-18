@@ -2,7 +2,8 @@
 pragma solidity ^0.8.17;
 
 import "forge-std/Test.sol";
-import {CgazToken} from "src/CgazToken.sol";
+import {cGAZ as CgazToken} from "src/cGAZ.sol";
+import "src/interfaces/AggregatorV3Interface.sol";
 
 // ERC20 pour le mock USDC
 import "openzeppelin-contracts/contracts/token/ERC20/ERC20.sol";
@@ -63,7 +64,7 @@ contract BurnFlowTest is Test {
 
         // Deploy token
         vm.prank(owner);
-        token = new CgazToken("cGAZ", "CGAZ", address(feed), mockUSDC);
+        token = new CgazToken(address(mockUSDC), address(feed));
         vm.warp(1);
         vm.prank(address(feed));
         token.updatePrice(2e9);

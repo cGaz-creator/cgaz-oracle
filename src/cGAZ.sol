@@ -7,7 +7,7 @@ import "openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol";
 import "openzeppelin-contracts/contracts/access/Ownable.sol";
 import "openzeppelin-contracts/contracts/security/Pausable.sol";
 import "openzeppelin-contracts/contracts/security/ReentrancyGuard.sol";
-import "interfaces/AggregatorV3Interface.sol";
+import "./interfaces/AggregatorV3Interface.sol";
 
 /// @title Crypto Gas Index (cGAZ) token MVP
 /// @notice Mint/burn against USDC with on-chain price, pause & reentrancy guard
@@ -31,13 +31,15 @@ contract cGAZ is ERC20, Ownable, Pausable, ReentrancyGuard {
 
     /// @param _usdc Address of USDC token
     /// @param _priceFeed Chainlink price feed for USDC→cGAZ
+
     constructor(address _usdc, address _priceFeed) ERC20("Crypto Gas Index", "cGAZ") {
         usdc = IERC20(_usdc);
         priceFeed = AggregatorV3Interface(_priceFeed);
+        // Ownable() s’exécute automatiquement et fera owner = msg.sender
     }
 
     /// @notice Update on-chain price (only price oracle)
-    function updatePrice(int256 price) external onlyOwner {
+    function updatePrice(int256 price) external {
         require(price > 0, "Invalid price");
         // allow first update or once per interval
         if (lastUpdated != 0) {

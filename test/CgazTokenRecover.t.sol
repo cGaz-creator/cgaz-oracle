@@ -3,7 +3,7 @@ pragma solidity ^0.8.17;
 
 import "forge-std/Test.sol";
 import "openzeppelin-contracts/contracts/token/ERC20/ERC20.sol";
-import {CgazToken} from "src/CgazToken.sol";
+import {cGAZ as CgazToken} from "src/cGAZ.sol";
 
 /// @dev Mock minimal ERC-20 pour nos tests
 contract MockERC20 is ERC20 {
@@ -26,7 +26,7 @@ contract CgazTokenRecoverTest is Test {
 
         // 2) déployer notre token en lui passant le mockUSDC
         vm.prank(owner);
-        token = new CgazToken("cGAZ", "CGAZ", owner, mockUSDC);
+        token = new CgazToken(address(mockUSDC), address(0));
 
         // 3) envoyer un peu de mockUSDC sur l’adresse du contrat
         mockUSDC.transfer(address(token), 1e6);
