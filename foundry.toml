@@ -1,8 +1,14 @@
+# See https://github.com/foundry-rs/foundry/tree/master/foundry for more information
+
 [profile.default]
 src = "src"
-out = "out"
-libs = ["lib"]
 
-remappings = [
-  "openzeppelin-contracts/=lib/openzeppelin-contracts/",
-]
+test = "test"
+# remappings = ["openzeppelin-contracts=lib/openzeppelin-contracts"]
+# You can define additional settings per profile
+
+[profile.release]
+# release profile settings
+
+[profile.ci]
+# continuous integration settings
