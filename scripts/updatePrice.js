@@ -4,14 +4,14 @@ import fetch from "node-fetch";
 const DEPLOYER_KEY = process.env.DEPLOYER_KEY?.trim();
 const ARB_SEPOLIA_RPC = process.env.ARB_SEPOLIA_RPC?.trim();
 const CHAINLINK_FEED_SEPOLIA = process.env.CHAINLINK_FEED_SEPOLIA?.trim();
-const FRED_API_KEY = process.env.FRED_API_KEY?.trim();
+const TRADING_API_KEY = process.env.TRADING_API_KEY?.trim();
 
-if (!DEPLOYER_KEY || !ARB_SEPOLIA_RPC || !CHAINLINK_FEED_SEPOLIA || !FRED_API_KEY) {
+if (!DEPLOYER_KEY || !ARB_SEPOLIA_RPC || !CHAINLINK_FEED_SEPOLIA || !TRADING_API_KEY) {
   console.error("Missing required environment variables:");
   console.error("DEPLOYER_KEY:", !!DEPLOYER_KEY);
   console.error("ARB_SEPOLIA_RPC:", !!ARB_SEPOLIA_RPC);
   console.error("CHAINLINK_FEED_SEPOLIA:", !!CHAINLINK_FEED_SEPOLIA);
-  console.error("FRED_API_KEY:", !!FRED_API_KEY);
+  console.error("TRADING_API_KEY:", !!TRADING_API_KEY);
   process.exit(1);
 }
 
@@ -22,21 +22,21 @@ const abi = ["function updatePrice(int256 newPrice) external"];
 const contract = new ethers.Contract(CHAINLINK_FEED_SEPOLIA, abi, wallet);
 
 async function fetchGasPriceUSD() {
-  const url = `https://api.stlouisfed.org/fred/series/observations?series_id=PNGASJPUSDM&api_key=${FRED_API_KEY}&file_type=json&limit=1`;
+  const url = `https://api.tradingeconomics.com/commodity/natural%20gas?c=${TRADING_API_KEY}`;
   try {
     const res = await fetch(url);
     const json = await res.json();
 
-    if (!json.observations || !json.observations.length) {
-      console.error("FRED API response is invalid or empty:", JSON.stringify(json, null, 2));
+    if (!Array.isArray(json) || !json[0] || !json[0].price) {
+      console.error("TradingEconomics response is invalid or empty:", JSON.stringify(json, null, 2));
       return null;
     }
 
-    const value = parseFloat(json.observations[0].value);
-    console.log("Latest gas price from FRED (USD):", value);
-    return value;
+    const price = parseFloat(json[0].price);
+    console.log("Latest gas price from TradingEconomics (USD):", price);
+    return price;
   } catch (err) {
-    console.error("Failed to fetch gas price:", err);
+    console.error("Failed to fetch gas price from TradingEconomics:", err);
     return null;
   }
 }
