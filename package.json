@@ -1,6 +1,7 @@
 {
   "name": "cryptogaz",
   "version": "1.0.0",
+  "type": "module",
   "description": "GAZ — Crypto Gas Index",
   "main": "index.js",
   "directories": {
