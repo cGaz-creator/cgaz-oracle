@@ -26,5 +26,5 @@ jobs:
           DEPLOYER_KEY: ${{ secrets.DEPLOYER_KEY }}
           ARB_SEPOLIA_RPC: ${{ secrets.ARB_SEPOLIA_RPC }}
           CHAINLINK_FEED_SEPOLIA: ${{ secrets.CHAINLINK_FEED_SEPOLIA }}
-          FRED_API_KEY: ${{ secrets.FRED_API_KEY }}
+          TRADING_API_KEY: ${{ secrets.TRADING_API_KEY }}
         run: node scripts/updatePrice.js
