@@ -5,6 +5,7 @@ const DEPLOYER_KEY = process.env.DEPLOYER_KEY?.trim();
 const ARB_SEPOLIA_RPC = process.env.ARB_SEPOLIA_RPC?.trim();
 const CHAINLINK_FEED_SEPOLIA = process.env.CHAINLINK_FEED_SEPOLIA?.trim();
 const TRADING_API_KEY = process.env.TRADING_API_KEY?.trim();
+console.log("TRADING_API_KEY (first 5 chars):", TRADING_API_KEY?.slice(0, 5));
 
 if (!DEPLOYER_KEY || !ARB_SEPOLIA_RPC || !CHAINLINK_FEED_SEPOLIA || !TRADING_API_KEY) {
   console.error("Missing required environment variables:");
