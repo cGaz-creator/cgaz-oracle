@@ -1,63 +1,53 @@
 import { ethers } from "ethers";
-import fetch from "node-fetch";
+import dotenv from "dotenv";
+dotenv.config();
 
 const DEPLOYER_KEY = process.env.DEPLOYER_KEY?.trim();
 const ARB_SEPOLIA_RPC = process.env.ARB_SEPOLIA_RPC?.trim();
 const CHAINLINK_FEED_SEPOLIA = process.env.CHAINLINK_FEED_SEPOLIA?.trim();
-const TRADING_API_KEY = process.env.TRADING_API_KEY?.trim();
-console.log("TRADING_API_KEY (first 5 chars):", TRADING_API_KEY?.slice(0, 5));
 
-if (!DEPLOYER_KEY || !ARB_SEPOLIA_RPC || !CHAINLINK_FEED_SEPOLIA || !TRADING_API_KEY) {
-  console.error("Missing required environment variables:");
-  console.error("DEPLOYER_KEY:", !!DEPLOYER_KEY);
-  console.error("ARB_SEPOLIA_RPC:", !!ARB_SEPOLIA_RPC);
-  console.error("CHAINLINK_FEED_SEPOLIA:", !!CHAINLINK_FEED_SEPOLIA);
-  console.error("TRADING_API_KEY:", !!TRADING_API_KEY);
+if (!DEPLOYER_KEY || !ARB_SEPOLIA_RPC || !CHAINLINK_FEED_SEPOLIA) {
+  console.error("Missing required environment variables.");
   process.exit(1);
 }
 
 const provider = new ethers.JsonRpcProvider(ARB_SEPOLIA_RPC);
 const wallet = new ethers.Wallet(DEPLOYER_KEY, provider);
 
-const abi = ["function updatePrice(int256 newPrice) external"];
+const abi = ["function updatePrice(uint256 newPrice) external"];
 const contract = new ethers.Contract(CHAINLINK_FEED_SEPOLIA, abi, wallet);
 
-async function fetchGasPriceUSD() {
-  const url = `https://api.tradingeconomics.com/commodity/natural%20gas?c=${TRADING_API_KEY}`;
-  try {
-    const res = await fetch(url);
-    const json = await res.json();
+// Vérifie si le marché est ouvert
+function isMarketOpen(date = new Date()) {
+  const utcHour = date.getUTCHours();
+  const day = date.getUTCDay(); // 0 = dimanche, 6 = samedi
+  if (day === 6) return false;
+  if (day === 0 && utcHour < 23) return false;
+  if (utcHour >= 21 && utcHour < 22) return false;
+  return true;
+}
 
-    if (!Array.isArray(json) || !json[0] || !json[0].price) {
-      console.error("TradingEconomics response is invalid or empty:", JSON.stringify(json, null, 2));
-      return null;
-    }
-
-    const price = parseFloat(json[0].price);
-    console.log("Latest gas price from TradingEconomics (USD):", price);
-    return price;
-  } catch (err) {
-    console.error("Failed to fetch gas price from TradingEconomics:", err);
-    return null;
-  }
+// Simule un prix entre 3.70 et 4.20 (6 décimales)
+function generateMockPrice() {
+  const raw = (Math.random() * (4.20 - 3.70) + 3.70).toFixed(6);
+  return ethers.parseUnits(raw, 6);
 }
 
 async function main() {
-  const priceUSD = await fetchGasPriceUSD();
-  if (!priceUSD) {
-    console.error("Could not retrieve gas price.");
+  if (!isMarketOpen()) {
+    console.log("Marché fermé, mise à jour annulée.");
     return;
   }
 
-  const scaledPrice = ethers.parseUnits(priceUSD.toFixed(6), 18);
-  console.log("Scaled price:", scaledPrice.toString());
+  const mockPrice = generateMockPrice();
+  console.log("Prix simulé (scaled, 6 décimales) :", mockPrice.toString());
 
-  const tx = await contract.updatePrice(scaledPrice);
-  console.log("Transaction sent:", tx.hash);
+  const tx = await contract.updatePrice(mockPrice);
+  console.log("Transaction envoyée :", tx.hash);
   await tx.wait();
-  console.log("Price updated successfully.");
+  console.log("Mise à jour du prix effectuée.");
 }
 
 main().catch((err) => {
-  console.error("Script execution failed:", err);
+  console.error("Erreur dans updatePrice.js :", err);
 });

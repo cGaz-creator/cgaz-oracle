@@ -1,22 +1,21 @@
-name: Update Gas Price Every Hour
+name: Update Gas Price
 
 on:
   schedule:
-    - cron: '0 * * * *'  # Toutes les heures
-  workflow_dispatch:     # Permet aussi de déclencher manuellement
+    - cron: '*/5 * * * *'  # Toutes les 5 minutes
+  workflow_dispatch:
 
 jobs:
-  update-price:
+  update:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout repo
-        uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
-      - name: Set up Node.js
-        uses: actions/setup-node@v3
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 18
 
       - name: Install dependencies
         run: npm install
@@ -26,5 +25,4 @@ jobs:
           DEPLOYER_KEY: ${{ secrets.DEPLOYER_KEY }}
           ARB_SEPOLIA_RPC: ${{ secrets.ARB_SEPOLIA_RPC }}
           CHAINLINK_FEED_SEPOLIA: ${{ secrets.CHAINLINK_FEED_SEPOLIA }}
-          TRADING_API_KEY: ${{ secrets.TRADING_API_KEY }}
         run: node scripts/updatePrice.js
