@@ -62,9 +62,12 @@ contract MintFlowTest is Test {
         vm.prank(owner);
         token = new CgazToken(address(mockUSDC), address(feed));
 
-        // 3) initialiser le prix on-chain (warp + appel par l'oracle)
+        // 3) set updater to this contract
+        vm.prank(owner);
+        token.setUpdater(address(this));
+
+        // 4) initialiser le prix on-chain (warp + appel par l'oracle)
         vm.warp(100);
-        vm.prank(address(feed));
         token.updatePrice(1e18);
     }
 
@@ -88,29 +91,68 @@ contract MintFlowTest is Test {
         // donc owner should still have 0 cGAZ fee minted
         assertEq(token.balanceOf(address(this)), 0, "commission inattendue");
     }
+function testMintWithNonZeroFee() public {
+    // ajuster l'oracle pour un prix non-unité
+    vm.prank(owner);
+    feed = new MockGasFeed(2e18); // prix = 2 USDC / cGAZ
 
-    function testMintWithNonZeroFee() public {
-        // ajuster l'oracle pour un prix non-unité
-        vm.prank(owner);
-        feed = new MockGasFeed(2e18); // prix = 2 USDC / cGAZ
-        // redéployer et reinit price
-        vm.prank(owner);
-        token = new CgazToken(address(mockUSDC), address(feed));
-        vm.warp(200);
-        vm.prank(address(feed));
-        token.updatePrice(2e18);
+    // redéployer le token avec le nouveau feed
+    vm.prank(owner);
+    token = new CgazToken(address(mockUSDC), address(feed));
 
-        // mint 100 USDC → brut = 100 * 1e18 / 2e18 = 50 cGAZ
-        // fee = 50 * 50 / 10000 = 0.25 → tronqué à 0
-        vm.startPrank(owner);
-        mockUSDC.approve(address(token), 100);
-        token.mint(address(this), 100);
-        vm.stopPrank();
+    // autoriser ce contrat de test comme updater
+    vm.prank(owner);
+    token.setUpdater(address(this));
 
-        // net = 50 cGAZ
-        assertEq(token.balanceOf(address(this)), 50, "net cGAZ incorrect");
+    // avancer le temps et mettre à jour le prix via adresse autorisée
+    vm.warp(200);
+    vm.prank(address(this));
+    token.updatePrice(2e18);
 
-        // USDC transféré sur le contrat
-        assertEq(mockUSDC.balanceOf(address(token)), 100, "USDC non recu");
-    }
+    // mint 100 USDC → brut = 100 * 1e18 / 2e18 = 50 cGAZ
+    // fee = 50 * 50 / 10_000 = 0.25 (tronqué à 0)
+    vm.startPrank(owner);
+    mockUSDC.approve(address(token), 100);
+    token.mint(address(this), 100);
+    vm.stopPrank();
+
+    // net = 50 cGAZ
+    assertEq(token.balanceOf(address(this)), 50, "net cGAZ incorrect");
+
+    // USDC transféré sur le contrat
+    assertEq(mockUSDC.balanceOf(address(token)), 100, "USDC non recu");
+}
+
+function testMintWithFeeLargeAmount() public {
+    // prix = 1 USDC = 1 cGAZ
+    vm.prank(owner);
+    feed = new MockGasFeed(1e18);
+
+    // déployer le token avec ce feed
+    vm.prank(owner);
+    token = new CgazToken(address(mockUSDC), address(feed));
+
+    // autoriser ce contrat de test comme updater
+    vm.prank(owner);
+    token.setUpdater(address(this));
+
+    // avancer le temps et mettre à jour le prix
+    vm.warp(300);
+    vm.prank(address(this));
+    token.updatePrice(1e18);
+
+    // mint 10_000 USDC → brut = 10_000 cGAZ
+    vm.startPrank(owner);
+    mockUSDC.approve(address(token), 10_000);
+    token.mint(address(this), 10_000);
+    vm.stopPrank();
+
+    uint256 expectedGross = 10_000 * 1e18 / 1e18; // 10_000
+    uint256 expectedFee = (expectedGross * 50) / 10_000; // 50
+    uint256 expectedNet = expectedGross - expectedFee;
+
+    assertEq(token.balanceOf(address(this)), expectedNet, "net cGAZ incorrect");
+    assertEq(token.balanceOf(owner), expectedFee, "fee cGAZ incorrect");
+    assertEq(mockUSDC.balanceOf(address(token)), 10_000, "USDC non recu");
+}
 }

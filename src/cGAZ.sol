@@ -17,17 +17,24 @@ contract cGAZ is ERC20, Ownable, Pausable, ReentrancyGuard {
     /// @notice Basis points for fees (0.5%)
     uint256 public constant FEE_BASIS_POINTS = 50;
     uint256 public constant BASIS_POINTS_DIVISOR = 10_000;
-    /// @notice Time window before price becomes stale (1 hour)
-    uint256 public constant STALE_THRESHOLD = 1 hours;
+    /// @notice Time window before price becomes stale (5 minutes)
+    uint256 public constant STALE_THRESHOLD = 5 minutes;
 
     IERC20 public immutable usdc;
     AggregatorV3Interface public immutable priceFeed;
     uint256 public lastUpdated;
     int256 public currentPrice;
+    address public updater;
 
     event PriceUpdated(int256 price, uint256 timestamp);
-    event TokensMinted(address indexed to, uint256 netAmount, uint256 fee);
-    event TokensBurned(address indexed from, uint256 burnedAmount, uint256 fee);
+    event TokensMinted(address indexed user, uint256 usdcIn, uint256 netCgaz, uint256 feeCgaz);
+    event TokensBurned(
+        address indexed user,
+        uint256 burnedCgaz,
+        uint256 feeCgaz,
+        uint256 usdcOut,
+        uint256 feeUsdc
+    );
 
     /// @param _usdc Address of USDC token
     /// @param _priceFeed Chainlink price feed for USDC→cGAZ
@@ -39,7 +46,7 @@ contract cGAZ is ERC20, Ownable, Pausable, ReentrancyGuard {
     }
 
     /// @notice Update on-chain price (only price oracle)
-    function updatePrice(int256 price) external {
+    function updatePrice(int256 price) external onlyUpdater {
         require(price > 0, "Invalid price");
         // allow first update or once per interval
         if (lastUpdated != 0) {
@@ -61,39 +68,47 @@ contract cGAZ is ERC20, Ownable, Pausable, ReentrancyGuard {
     /// @param to Recipient of cGAZ
     /// @param usdcAmount Amount of USDC to deposit
     function mint(address to, uint256 usdcAmount) external whenNotPaused nonReentrant {
+        require(to != address(0), "Invalid recipient");
+        require(usdcAmount > 0, "Amount must be > 0");
+
         int256 price = _freshPrice();
-        // transfer USDC from sender
+
         usdc.safeTransferFrom(msg.sender, address(this), usdcAmount);
-        // calculate gross cGAZ
+
         uint256 gross = (usdcAmount * 1e18) / uint256(price);
-        // apply fee
         uint256 fee = (gross * FEE_BASIS_POINTS) / BASIS_POINTS_DIVISOR;
         uint256 net = gross - fee;
+
         _mint(to, net);
         _mint(owner(), fee);
-        emit TokensMinted(to, net, fee);
+
+        emit TokensMinted(to, usdcAmount, net, fee);
     }
 
     /// @notice Burn cGAZ to redeem USDC
     /// @param from Address burning tokens
     /// @param cgazAmount Amount of cGAZ to burn
     function burn(address from, uint256 cgazAmount) external whenNotPaused nonReentrant {
-        int256 price = _freshPrice();
-        // calculate net burn after fee
-        uint256 feeCGAZ = (cgazAmount * FEE_BASIS_POINTS) / BASIS_POINTS_DIVISOR;
-        uint256 netCGAZ = cgazAmount - feeCGAZ;
-        // burn and fee
-        _burn(from, netCGAZ);
-        _mint(owner(), feeCGAZ);
-        // compute USDC output
-        uint256 usdcGross = (netCGAZ * uint256(price)) / 1e18;
-        uint256 feeUSDC = (usdcGross * FEE_BASIS_POINTS) / BASIS_POINTS_DIVISOR;
-        uint256 usdcNet = usdcGross - feeUSDC;
-        // send USDC
-        usdc.safeTransfer(from, usdcNet);
-        usdc.safeTransfer(owner(), feeUSDC);
-        emit TokensBurned(from, netCGAZ, feeCGAZ);
-    }
+    require(from != address(0), "Invalid sender");
+    require(cgazAmount > 0, "Amount must be > 0");
+
+    int256 price = _freshPrice();
+
+    uint256 feeCGAZ = (cgazAmount * FEE_BASIS_POINTS) / BASIS_POINTS_DIVISOR;
+    uint256 netCGAZ = cgazAmount - feeCGAZ;
+
+    _burn(from, netCGAZ);
+    _mint(owner(), feeCGAZ);
+
+    uint256 usdcGross = (netCGAZ * uint256(price)) / 1e18;
+    uint256 feeUSDC = (usdcGross * FEE_BASIS_POINTS) / BASIS_POINTS_DIVISOR;
+    uint256 usdcNet = usdcGross - feeUSDC;
+
+    usdc.safeTransfer(from, usdcNet);
+    usdc.safeTransfer(owner(), feeUSDC);
+
+    emit TokensBurned(from, cgazAmount, feeCGAZ, usdcNet, feeUSDC);
+}
 
     /// @notice Pause mint and burn in emergencies
     function pause() external onlyOwner {
@@ -107,5 +122,15 @@ contract cGAZ is ERC20, Ownable, Pausable, ReentrancyGuard {
     /// @notice Recover stray USDC from contract
     function recoverUSDC(address to, uint256 amount) external onlyOwner {
         usdc.safeTransfer(to, amount);
+    }
+    /// @notice Set the address allowed to call updatePrice
+    function setUpdater(address newUpdater) external onlyOwner {
+        require(newUpdater != address(0), "Invalid updater");
+        updater = newUpdater;
+    }
+
+    modifier onlyUpdater() {
+        require(msg.sender == updater, "Not authorized");
+        _;
     }
 }
