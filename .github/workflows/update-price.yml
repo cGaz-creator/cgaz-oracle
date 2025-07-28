@@ -1,28 +1,32 @@
 name: Update Gas Price
-
+run: node scripts/updatePriceOnce.js
 on:
   schedule:
-    - cron: '*/5 * * * *'  # Toutes les 5 minutes
-  workflow_dispatch:
+    - cron: "*/5 * * * *" # Toutes les 5 minutes
+  workflow_dispatch:       # Exécution manuelle possible depuis GitHub
 
 jobs:
   update:
     runs-on: ubuntu-latest
 
+    env:
+      RPC_URL: ${{ secrets.RPC_URL }}
+      PRIVATE_KEY: ${{ secrets.PRIVATE_KEY }}
+      CONTRACT_ADDRESS: ${{ secrets.CONTRACT_ADDRESS }}
+      CHAINLINK_DECIMALS: ${{ secrets.CHAINLINK_DECIMALS }}
+      API_KEY: ${{ secrets.API_KEY }}
+
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout repo
+        uses: actions/checkout@v4
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 18
+          node-version: 20
 
       - name: Install dependencies
-        run: npm install
+        run: npm ci
 
-      - name: Run updatePrice script
-        env:
-          DEPLOYER_KEY: ${{ secrets.DEPLOYER_KEY }}
-          ARB_SEPOLIA_RPC: ${{ secrets.ARB_SEPOLIA_RPC }}
-          CHAINLINK_FEED_SEPOLIA: ${{ secrets.CHAINLINK_FEED_SEPOLIA }}
-        run: node scripts/updatePrice.js
+      - name: Run updatePriceOnce.js
+        run: node scripts/updatePriceOnce.js
