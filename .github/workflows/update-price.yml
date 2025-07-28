@@ -1,3 +1,4 @@
+# Force GitHub to reload the cron schedule
 name: Update Gas Price
 
 on:
