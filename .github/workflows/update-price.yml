@@ -1,9 +1,9 @@
 name: Update Gas Price
-run: node scripts/updatePriceOnce.js
+
 on:
   schedule:
-    - cron: "*/5 * * * *" # Toutes les 5 minutes
-  workflow_dispatch:       # Exécution manuelle possible depuis GitHub
+    - cron: "*/5 * * * *"
+  workflow_dispatch:
 
 jobs:
   update:
@@ -17,7 +17,7 @@ jobs:
       API_KEY: ${{ secrets.API_KEY }}
 
     steps:
-      - name: Checkout repo
+      - name: Checkout repository
         uses: actions/checkout@v4
 
       - name: Setup Node.js
