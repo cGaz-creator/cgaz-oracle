@@ -1,5 +1,5 @@
 # Force GitHub to reload the cron schedule
-name: Oracle Uptade
+name: Oracle Updade
 
 on:
   schedule:
