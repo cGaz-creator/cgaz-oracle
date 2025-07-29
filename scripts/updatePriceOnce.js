@@ -5,6 +5,8 @@ import { ethers } from "ethers";
 
 dotenv.config();
 
+console.log("Script déclenché à :", new Date().toISOString());
+
 console.log("Vérification des variables d'environnement :");
 console.log("RPC_URL =", !!process.env.RPC_URL);
 console.log("PRIVATE_KEY =", !!process.env.PRIVATE_KEY);
