@@ -2,7 +2,7 @@
 pragma solidity ^0.8.17;
 
 import "forge-std/Script.sol";
-import { cGAZ } from "src/cGAZ.sol";
+import {cGAZ} from "src/cGAZ.sol";
 
 contract Deploy is Script {
     function run() external {
@@ -11,7 +11,7 @@ contract Deploy is Script {
         vm.startBroadcast(uint256(pk));
 
         address usdcAddress = vm.envAddress("USDC_SEPOLIA");
-        address priceFeed   = vm.envAddress("CHAINLINK_FEED_SEPOLIA");
+        address priceFeed = vm.envAddress("CHAINLINK_FEED_SEPOLIA");
 
         cGAZ token = new cGAZ(usdcAddress, priceFeed);
         console.log("cGAZ deployed to:", address(token));

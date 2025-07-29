@@ -2,7 +2,7 @@
 pragma solidity ^0.8.17;
 
 import "forge-std/Script.sol";
-import { MockGasFeed } from "test/CgazTokenBurn.t.sol"; // ou le chemin vers ton MockGasFeed
+import {MockGasFeed} from "test/CgazTokenBurn.t.sol"; // ou le chemin vers ton MockGasFeed
 
 contract DeployMockFeed is Script {
     function run() external {

@@ -68,7 +68,7 @@ contract BurnFlowTest is Test {
 
         vm.prank(owner);
         token.setUpdater(address(this));
-        
+
         vm.warp(1);
         token.updatePrice(2e9);
 
@@ -101,49 +101,50 @@ contract BurnFlowTest is Test {
         assertEq(mockUSDC.balanceOf(address(this)), netUSDC, "USDC net incorrect");
         assertEq(mockUSDC.balanceOf(owner) - ownerBefore, feeUSDC, "Commission owner incorrecte");
     }
-function testBurnWithFeeLargeAmount() public {
-    // 1. Setup oracle (1 USDC = 1 cGAZ)
-    vm.prank(owner);
-    feed = new MockGasFeed(1e18);
 
-    vm.prank(owner);
-    token = new CgazToken(address(mockUSDC), address(feed));
+    function testBurnWithFeeLargeAmount() public {
+        // 1. Setup oracle (1 USDC = 1 cGAZ)
+        vm.prank(owner);
+        feed = new MockGasFeed(1e18);
 
-    // autoriser ce contrat de test comme updater
-    vm.prank(owner);
-    token.setUpdater(address(this));
+        vm.prank(owner);
+        token = new CgazToken(address(mockUSDC), address(feed));
 
-    vm.warp(300);
-    vm.prank(address(this));
-    token.updatePrice(1e18);
+        // autoriser ce contrat de test comme updater
+        vm.prank(owner);
+        token.setUpdater(address(this));
 
-    // 2. Mint 10_000 USDC → brut = 10_000 cGAZ
-    vm.startPrank(owner);
-    mockUSDC.approve(address(token), 10_000);
-    token.mint(address(this), 10_000);
-    vm.stopPrank();
+        vm.warp(300);
+        vm.prank(address(this));
+        token.updatePrice(1e18);
 
-    uint256 burnAmount = token.balanceOf(address(this));
+        // 2. Mint 10_000 USDC → brut = 10_000 cGAZ
+        vm.startPrank(owner);
+        mockUSDC.approve(address(token), 10_000);
+        token.mint(address(this), 10_000);
+        vm.stopPrank();
 
-    // 3. Capture solde owner avant burn
-    uint256 beforeFeeCgaz = token.balanceOf(owner);
-    uint256 beforeFeeUsdc = mockUSDC.balanceOf(owner);
+        uint256 burnAmount = token.balanceOf(address(this));
 
-    // 4. Burn tous les cGAZ
-    vm.startPrank(address(this));
-    token.burn(address(this), burnAmount);
-    vm.stopPrank();
+        // 3. Capture solde owner avant burn
+        uint256 beforeFeeCgaz = token.balanceOf(owner);
+        uint256 beforeFeeUsdc = mockUSDC.balanceOf(owner);
 
-    // 5. Calculs attendus
-    uint256 feeCGAZ = (burnAmount * 50) / 10_000;        // = 50e18
-    uint256 netCGAZ = burnAmount - feeCGAZ;              // = 9950e18
-    uint256 usdcGross = (netCGAZ * 1e18) / 1e18;         // = 9950
-    uint256 feeUSDC = (usdcGross * 50) / 10_000;         // = 49
-    uint256 usdcNet = usdcGross - feeUSDC;              // = 9901
+        // 4. Burn tous les cGAZ
+        vm.startPrank(address(this));
+        token.burn(address(this), burnAmount);
+        vm.stopPrank();
 
-    // 6. Assertions
-    assertEq(mockUSDC.balanceOf(address(this)), usdcNet, "USDC net incorrect");
-    assertEq(token.balanceOf(owner) - beforeFeeCgaz, feeCGAZ, "fee cGAZ incorrect");
-    assertEq(mockUSDC.balanceOf(owner) - beforeFeeUsdc, feeUSDC, "fee USDC incorrect");
-}
+        // 5. Calculs attendus
+        uint256 feeCGAZ = (burnAmount * 50) / 10_000; // = 50e18
+        uint256 netCGAZ = burnAmount - feeCGAZ; // = 9950e18
+        uint256 usdcGross = (netCGAZ * 1e18) / 1e18; // = 9950
+        uint256 feeUSDC = (usdcGross * 50) / 10_000; // = 49
+        uint256 usdcNet = usdcGross - feeUSDC; // = 9901
+
+        // 6. Assertions
+        assertEq(mockUSDC.balanceOf(address(this)), usdcNet, "USDC net incorrect");
+        assertEq(token.balanceOf(owner) - beforeFeeCgaz, feeCGAZ, "fee cGAZ incorrect");
+        assertEq(mockUSDC.balanceOf(owner) - beforeFeeUsdc, feeUSDC, "fee USDC incorrect");
+    }
 }
